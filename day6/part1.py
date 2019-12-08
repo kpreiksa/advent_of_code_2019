@@ -1,5 +1,5 @@
 orbits = {}
-f = open('day6_input.txt')
+f = open('input.txt')
 lines = f.readlines()
 total_orbits = 0
 for line in lines:
