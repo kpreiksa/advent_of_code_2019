@@ -1,25 +1,26 @@
-def run_instruction(pc, ints):
-    inst = ints[pc]
+def run_instruction(ip, ints):
+    # returns length of instruction executed, or -1 to halt program execution
+    inst = ints[ip]
     print(inst)
     if (inst == 1):
-        print('Multiplying')
-        param1_loc = ints[pc + 1]
-        param2_loc = ints[pc + 2]
-        out_loc = ints[pc + 3]
-        ints[out_loc] = ints[param1_loc] + ints[param2_loc]
-        return 0
+        print('Add')
+        param1 = ints[ip + 1]
+        param2 = ints[ip + 2]
+        param3 = ints[ip + 3]
+        ints[param3] = ints[param1] + ints[param2]
+        return 4
 
     elif (inst == 2):
         # multiply
-        print('Multiplying')
-        param1_loc = ints[pc + 1]
-        param2_loc = ints[pc + 2]
-        out_loc = ints[pc + 3]
-        ints[out_loc] = ints[param1_loc] * ints[param2_loc]
-        return 0
+        print('Multiply')
+        param1 = ints[ip + 1]
+        param2 = ints[ip + 2]
+        param3 = ints[ip + 3]
+        ints[param3] = ints[param1] * ints[param2]
+        return 4
     elif (inst == 99):
         # halt
-        print('Halting')
+        print('Halt')
         return -1
 
 
@@ -34,7 +35,7 @@ while(pc < len(ints)):
     if (return_value == -1):
         break
     else:
-        pc += 4
+        pc += return_value
 print('Done.')
 
 
