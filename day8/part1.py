@@ -1,4 +1,3 @@
-orbits = {}
 f = open('input.txt')
 line = f.readlines()[0].strip()
 
