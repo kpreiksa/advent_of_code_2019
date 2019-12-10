@@ -4,6 +4,9 @@ from itertools import permutations
 class ProgramTerminatedError(Exception):
     pass
 
+class WaitingForInputError(Exception):
+    pass
+
 class Opcode():
     def __init__(self, ints, pc):
         ''' Starting with an integer, generate the opcode obj '''
@@ -27,21 +30,28 @@ class Opcode():
     def param3_addr(self):
         return self._address+3
 
-    @property
-    def param1_value(self, mem):
-        if (self.param1_mode == 0):
+    def param1_value(self, mem, mode = None):
+        if not mode:
+            mode = self.param1_mode
+
+        if (mode == 0):
             return mem[mem[self.param1_addr]]
 
-        elif (self.param1_mode == 1): 
+        elif (mode == 1): 
             return mem[self.param1_addr]
 
-    @property
-    def param2_value(self, mem):
-        if (self.param2_mode == 0):
+    def param2_value(self, mem, mode = None):
+        if not mode:
+            mode = self.param2_mode
+
+        if (mode == 0):
             return mem[mem[self.param2_addr]]
 
-        elif (self.param2_mode == 1): 
+        elif (mode == 1): 
             return mem[self.param2_addr]
+
+    def param3_value(self, mem, mode = None):
+        return mem[self.param3_addr]
 
     @property
     def param1_mode(self):
@@ -77,135 +87,72 @@ class IntCodeComputer():
         }
 
     def oc_add(self, oc):
-
-        param1 = oc.param1_value
-        if (oc.param1_mode == 0): # 0 is position mode
-            param1 = self.ints[self.ints[self.pc + 1]]
-        elif (oc.param1_mode == 1): # 1 is immediate mode
-            param1 = self.ints[self.pc + 1]
-
-
-        if (oc.param2_mode == 0): # 0 is position mode
-            param2 = self.ints[self.ints[self.pc + 2]]
-        elif (oc.param2_mode == 1): # 1 is immediate mode
-            param2 = self.ints[self.pc + 2]
-
-        param3 = self.ints[self.pc + 3] # always position mode
+        param1 = oc.param1_value(self.ints)
+        param2 = oc.param2_value(self.ints)
+        param3 = oc.param3_value(self.ints, mode = 1)
         self.ints[param3] = param1 + param2
         self.pc += 4
 
     def oc_mult(self, oc):
-
-        if (oc.param1_mode == 0): # 0 is position mode
-            param1 = self.ints[self.ints[self.pc + 1]] # dereference
-        elif (oc.param1_mode == 1): # 1 is immediate mode
-            param1 = self.ints[self.pc + 1]
-
-        if (oc.param2_mode == 0): # 0 is position mode
-            param2 = self.ints[self.ints[self.pc + 2]]
-        elif (oc.param2_mode == 1): # 1 is immediate mode
-            param2 = self.ints[self.pc + 2]
-
-        param3 = self.ints[self.pc + 3] # always position mode
+        param1 = oc.param1_value(self.ints)
+        param2 = oc.param2_value(self.ints)
+        param3 = oc.param3_value(self.ints, mode = 1)
         self.ints[param3] = param1 * param2
         self.pc += 4
 
-
     def oc_input(self, oc):
-
+        param1 = oc.param1_value(self.ints, mode = 1)
         if (self._input_instruction == 0):
             input_value = self._phase
         elif (self._input_instruction == 1):
             input_value = self._input_value
-        # input_value = input('Enter input')
         self._input_instruction += 1
-        self.ints[self.ints[self.pc+1]] = int(input_value)
+        self.ints[param1] = int(input_value)
         self.pc += 2
 
     def oc_output(self, oc):
-        if oc.param1_mode == 0:
-            test_result = self.ints[self.ints[self.pc+1]]
-        elif oc.param1_mode == 1:
-            test_result = self.ints[self.pc+1]
-        self.output = test_result
-        # print(f'Test: {test_result}')
+        param1 = oc.param1_value(self.ints)
+        self.output = param1
         self.pc += 2
 
     def oc_jmpT(self, oc):
-        if (oc.param1_mode == 0): # 0 is position mode
-            param1 = self.ints[self.ints[self.pc + 1]] # dereference
-        elif (oc.param1_mode == 1): # 1 is immediate mode
-            param1 = self.ints[self.pc + 1]
-
-        if (oc.param2_mode == 0): # 0 is position mode
-            param2 = self.ints[self.ints[self.pc + 2]]
-        elif (oc.param2_mode == 1): # 1 is immediate mode
-            param2 = self.ints[self.pc + 2]
-
+        param1 = oc.param1_value(self.ints)
+        param2 = oc.param2_value(self.ints)
         if param1 != 0:
             self.pc = param2
         else:
             self.pc += 2
 
     def oc_jmpF(self, oc):
-        if (oc.param1_mode == 0): # 0 is position mode
-            param1 = self.ints[self.ints[self.pc + 1]] # dereference
-        elif (oc.param1_mode == 1): # 1 is immediate mode
-            param1 = self.ints[self.pc + 1]
-
-        if (oc.param2_mode == 0): # 0 is position mode
-            param2 = self.ints[self.ints[self.pc + 2]]
-        elif (oc.param2_mode == 1): # 1 is immediate mode
-            param2 = self.ints[self.pc + 2]
-
+        param1 = oc.param1_value(self.ints)
+        param2 = oc.param2_value(self.ints)
         if param1 == 0:
             self.pc = param2
         else:
             self.pc += 3
 
     def oc_lt(self, oc):
-        if (oc.param1_mode == 0): # 0 is position mode
-            param1 = self.ints[self.ints[self.pc + 1]] # dereference
-        elif (oc.param1_mode == 1): # 1 is immediate mode
-            param1 = self.ints[self.pc + 1]
-
-        if (oc.param2_mode == 0): # 0 is position mode
-            param2 = self.ints[self.ints[self.pc + 2]]
-        elif (oc.param2_mode == 1): # 1 is immediate mode
-            param2 = self.ints[self.pc + 2]
-
-        param3 = self.ints[self.pc+3]
-
+        param1 = oc.param1_value(self.ints)
+        param2 = oc.param2_value(self.ints)
+        param3 = oc.param3_value(self.ints, mode = 1)
         if param1 < param2:
-            self. ints[param3] = 1
+            self.ints[param3] = 1
         else:
             self.ints[param3] = 0
-        
         self.pc += 4
 
     def oc_eq(self, oc):
-        if (oc.param1_mode == 0): # 0 is position mode
-            param1 = self.ints[self.ints[self.pc + 1]] # dereference
-        elif (oc.param1_mode == 1): # 1 is immediate mode
-            param1 = self.ints[self.pc + 1]
-
-        if (oc.param2_mode == 0): # 0 is position mode
-            param2 = self.ints[self.ints[self.pc + 2]]
-        elif (oc.param2_mode == 1): # 1 is immediate mode
-            param2 = self.ints[self.pc + 2]
-
-        param3 = self.ints[self.pc+3]
-
+        param1 = oc.param1_value(self.ints)
+        param2 = oc.param2_value(self.ints)
+        param3 = oc.param3_value(self.ints, mode = 1)
         if param1 == param2:
             self.ints[param3] = 1
         else:
             self.ints[param3] = 0
-        
         self.pc += 4
 
     def oc_halt(self, oc):
         raise ProgramTerminatedError()
-
 
     def run_instruction(self):
         # returns length of instruction executed, or -1 to halt program execution
@@ -219,7 +166,6 @@ class IntCodeComputer():
                 self.run_instruction()
             except ProgramTerminatedError:
                 break
-
 
     def load_memory(self, file):
         f = open(file)
