@@ -18,79 +18,92 @@ class Opcode():
         self._address = pc
         self._inst_string = f'{self._raw_opcode:#05}' # 5 = max number of digits for an instruction
         self._params = [{'supported': False}] * 3
-
-    def set_param_info(self, param_info):
-        for index, value in enumerate(param_info):
+        for index in range(0,3):
             param_info = {}
             param_info['supported'] = True
-            param_info['mode'] = 'UNKNOWN'
-            param_info['addr'] = self._address + index + 1
-            if value == 1:
-                param_info['type'] = 'OUTPUT'
-                mode = int(self._inst_string[-3 - index])
-                if mode != 1: # don't allow immediate mode for output
-                    param_info['mode'] = mode
-                else:
-                    param_info['mode'] = 0
-            elif value == 0:
-                param_info['type'] = 'INPUT'
-                mode = int(self._inst_string[-3 - index])
-                param_info['mode'] = mode
-            
+            mode = int(self._inst_string[-3 - index])
+            param_info['mode'] = mode
+            param_info['addr'] = self._address + index + 1            
             self._params[index] = param_info
-
         
     @property
     def opcode(self):
         return int(self._inst_string[-2:])
 
-    def param1_value(self, mem, mode = None):
-        param_info = self._params[0]
-
-        if (param_info['mode'] == 0 and param_info['type'] != 'OUTPUT'):
-            return mem[mem[param_info['addr']]]
-
-        else: # if mode is immediate OR param type is output... 
-            return mem[param_info['addr']]
-
-    def param2_value(self, mem, mode = None):
-        param_info = self._params[1]
- 
-        if (param_info['mode'] == 0 and param_info['type'] != 'OUTPUT'):
-            return mem[mem[param_info['addr']]]
-
-        else: # if mode is immediate OR param type is output... 
-            return mem[param_info['addr']]
-
-    def param3_value(self, mem, mode = None):
-        param_info = self._params[2]
-        return mem[param_info['addr']]
-
     @property
     def address(self):
         return self._address
 
+    def get_param(self, index, mem, rel_base):
+        param_info = self._params[index]
+        if (param_info['mode'] == 0):
+            return mem[mem[param_info['addr']]]
+        elif (param_info['mode'] == 1): # if mode is immediate OR param type is output... 
+            return mem[param_info['addr']]
+        else:
+            return mem[mem[param_info['addr'] + rel_base]]
+
+    def set_param(self, index, mem, value, rel_base):
+        param_info = self._params[index]
+        if(param_info['mode'] == 0):
+            mem[mem[param_info['addr']]] = value
+        elif(param_info['mode'] == 1):
+            raise ValueError('Got immediate mode for output')
+        else:
+            mem[mem[param_info['addr'] + rel_base]] = value
+
+class IntCodeMemory():
+    def __init__(self, file):
+        self._mem_dict = {}
+        self.load(file)
+
+    def __len__(self):
+        return len(self._mem_dict)
+
+    def _get_max_addr(self):
+        return max(self._mem_dict.keys())
+
+    def __setitem__(self, key, item):
+        self._mem_dict[key] = item
+        for i in range(0,self._get_max_addr() + 1):
+            if i not in self._mem_dict.keys():
+                self._mem_dict[i] = 0 
+
+    def __getitem__(self, key):
+        if key in self._mem_dict:
+            return self._mem_dict[key]
+        else:
+            return 0
+
+    def load(self, file):
+        f = open(file)
+        line = f.readlines()[0].strip()
+        ints_str = line.split(',')
+        ints = [int(x) for x in ints_str]
+        self._mem_dict = {index: initial_value for index, initial_value in enumerate(ints)}
 
 class IntCodeComputer():
     def __init__(self):
         self._output = 0
         self._output_available = False
-        self.ints = self.load_memory('input.txt')
         self.pc = 0 # program counter
+        self._rel_base = 0
         self._input_instruction = 0
         self._input_value = None
         self._halted = False
         self._opcodes = {
-            1: (self.oc_add, [0,0,1]),
-            2: (self.oc_mult, [0,0,1]),
-            3: (self.oc_input, [1]),
-            4: (self.oc_output, [0]),
-            5: (self.oc_jmpT, [0,0]),
-            6: (self.oc_jmpF, [0,0]),
-            7: (self.oc_lt, [0,0,1]),
-            8: (self.oc_eq, [0,0,1]),
-            99:(self.oc_halt, []),
+            1: self.oc_add,
+            2: self.oc_mult,
+            3: self.oc_input,
+            4: self.oc_output,
+            5: self.oc_jmpT,
+            6: self.oc_jmpF,
+            7: self.oc_lt,
+            8: self.oc_eq,
+            9: self.oc_arb,
+            99:self.oc_halt,
         }
+        self.mem = IntCodeMemory('input.txt')
 
     def set_input(self, in_value):
         self._input_value = in_value
@@ -107,69 +120,70 @@ class IntCodeComputer():
         return self._output_available
 
     def oc_add(self, oc):
-        param1 = oc.param1_value(self.ints)
-        param2 = oc.param2_value(self.ints)
-        param3 = oc.param3_value(self.ints)
-        self.ints[param3] = param1 + param2
+        param1 = oc.get_param(0, self.mem, self._rel_base)
+        param2 = oc.get_param(1, self.mem, self._rel_base)
+        oc.set_param(2, self.mem, param1 + param2, self._rel_base)
         self.pc += 4
 
     def oc_mult(self, oc):
-        param1 = oc.param1_value(self.ints)
-        param2 = oc.param2_value(self.ints)
-        param3 = oc.param3_value(self.ints)
-        self.ints[param3] = param1 * param2
+        param1 = oc.get_param(0, self.mem, self._rel_base)
+        param2 = oc.get_param(1, self.mem, self._rel_base)
+        oc.set_param(2, self.mem, param1 * param2, self._rel_base)
         self.pc += 4
 
     def oc_input(self, oc):
-        param1 = oc.param1_value(self.ints)
         if(self._input_value == None):
             raise WaitingForInputError()
         input_value = self._input_value
-        self.ints[param1] = int(input_value)
+        oc.set_param(0, self.mem, int(input_value), self._rel_base)
         self._input_value = None
         self.pc += 2
 
     def oc_output(self, oc):
-        param1 = oc.param1_value(self.ints)
+        param1 = oc.get_param(0, self.mem, self._rel_base)
         self._output = param1
+        print(f'Output: {param1}')
         self._output_available = True
         self.pc += 2
 
     def oc_jmpT(self, oc):
-        param1 = oc.param1_value(self.ints)
-        param2 = oc.param2_value(self.ints)
+        param1 = oc.get_param(0, self.mem, self._rel_base)
+        param2 = oc.get_param(1, self.mem, self._rel_base)
         if param1 != 0:
             self.pc = param2
         else:
-            self.pc += 2
+            self.pc += 3
 
     def oc_jmpF(self, oc):
-        param1 = oc.param1_value(self.ints)
-        param2 = oc.param2_value(self.ints)
+        param1 = oc.get_param(0, self.mem, self._rel_base)
+        param2 = oc.get_param(1, self.mem, self._rel_base)
         if param1 == 0:
             self.pc = param2
         else:
             self.pc += 3
 
     def oc_lt(self, oc):
-        param1 = oc.param1_value(self.ints)
-        param2 = oc.param2_value(self.ints)
-        param3 = oc.param3_value(self.ints)
+        param1 = oc.get_param(0, self.mem, self._rel_base)
+        param2 = oc.get_param(1, self.mem, self._rel_base)
         if param1 < param2:
-            self.ints[param3] = 1
+            oc.set_param(2, self.mem, 1, self._rel_base)
         else:
-            self.ints[param3] = 0
+            oc.set_param(2, self.mem, 0, self._rel_base)
         self.pc += 4
 
     def oc_eq(self, oc):
-        param1 = oc.param1_value(self.ints)
-        param2 = oc.param2_value(self.ints)
-        param3 = oc.param3_value(self.ints)
+        param1 = oc.get_param(0, self.mem, self._rel_base)
+        param2 = oc.get_param(1, self.mem, self._rel_base)
         if param1 == param2:
-            self.ints[param3] = 1
+            oc.set_param(2, self.mem, 1, self._rel_base)
         else:
-            self.ints[param3] = 0
+            oc.set_param(2, self.mem, 0, self._rel_base)
         self.pc += 4
+
+    def oc_arb(self, oc):
+        param1 = oc.get_param(0, self.mem, self._rel_base)
+        self._rel_base += param1
+        self.pc += 2
 
     def oc_halt(self, oc):
         self._halted = True
@@ -177,16 +191,12 @@ class IntCodeComputer():
 
     def run_instruction(self):
         # returns length of instruction executed, or -1 to halt program execution
-        oc = Opcode(self.ints, self.pc)
-
-        oc_func = self._opcodes[oc.opcode][0]
-        oc_info = self._opcodes[oc.opcode][1]
-        oc.set_param_info(oc_info)
-        
+        oc = Opcode(self.mem, self.pc)
+        oc_func = self._opcodes[oc.opcode]
         oc_func(oc)
 
     def run_to_end(self):
-        while(self.pc < len(self.ints) and not self._halted):
+        while(self.pc < len(self.mem) and not self._halted):
             self.run_instruction()
             # print(f'Program Counter: {pc}')
             # try:
@@ -195,13 +205,6 @@ class IntCodeComputer():
             #     return -1
             # except WaitingForInputError:
             #     return -2
-
-    def load_memory(self, file):
-        f = open(file)
-        line = f.readlines()[0].strip()
-        ints_str = line.split(',')
-        ints = [int(x) for x in ints_str]
-        return ints
 
 
 amp_settings = list(permutations(range(5, 10)))
