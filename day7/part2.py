@@ -3,208 +3,192 @@ from itertools import permutations
 import time
 
 
+from itertools import permutations
+
+class ProgramTerminatedError(Exception):
+    pass
+
+class WaitingForInputError(Exception):
+    pass
+
+class Opcode():
+    def __init__(self, ints, pc):
+        ''' Starting with an integer, generate the opcode obj '''
+        self._raw_opcode = ints[pc]
+        self._address = pc
+        self._inst_string = f'{self._raw_opcode:#05}' # 5 = max number of digits for an instruction
+        
+    @property
+    def opcode(self):
+        return int(self._inst_string[-2:])
+
+    @property
+    def param1_addr(self):
+        return self._address+1
+
+    @property
+    def param2_addr(self):
+        return self._address+2
+
+    @property
+    def param3_addr(self):
+        return self._address+3
+
+    def param1_value(self, mem, mode = None):
+        if not mode:
+            mode = self.param1_mode
+
+        if (mode == 0):
+            return mem[mem[self.param1_addr]]
+
+        elif (mode == 1): 
+            return mem[self.param1_addr]
+
+    def param2_value(self, mem, mode = None):
+        if not mode:
+            mode = self.param2_mode
+
+        if (mode == 0):
+            return mem[mem[self.param2_addr]]
+
+        elif (mode == 1): 
+            return mem[self.param2_addr]
+
+    def param3_value(self, mem, mode = None):
+        return mem[self.param3_addr]
+
+    @property
+    def param1_mode(self):
+        return int(self._inst_string[-3])
+
+    @property
+    def param2_mode(self):
+        return int(self._inst_string[-4])
+
+    @property
+    def address(self):
+        return self._address
+
+
 class IntCodeComputer():
-    def __init__(self, phase, input_delegate, initial_input_value = None):
+    def __init__(self):
         self._output = 0
         self._output_available = False
         self.ints = self.load_memory('input.txt')
         self.pc = 0 # program counter
         self._input_instruction = 0
-        self._phase = phase
-        self._input_value = initial_input_value
-        self._input_valid = False
-        self.is_executing = False
-        self._input_delegate = input_delegate
-        self._execution_paused = False
+        self._input_value = None
+        self._halted = False
+        self._opcodes = {
+            1: self.oc_add,
+            2: self.oc_mult,
+            3: self.oc_input,
+            4: self.oc_output,
+            5: self.oc_jmpT,
+            6: self.oc_jmpF,
+            7: self.oc_lt,
+            8: self.oc_eq,
+            99:self.oc_halt,
+        }
+
+    def set_input(self, in_value):
+        self._input_value = in_value
 
     @property
     def output(self):
-        self._output_available = False
-        return self._output
+        if self._output_available:
+            return self._output
+        else:
+            return None
 
     @property
     def output_available(self):
         return self._output_available
 
-    def set_input_delegate(self, input_delegate):
-        self._input_delegate = input_delegate
-        print('New input provided')
+    def oc_add(self, oc):
+        param1 = oc.param1_value(self.ints)
+        param2 = oc.param2_value(self.ints)
+        param3 = oc.param3_value(self.ints, mode = 1)
+        self.ints[param3] = param1 + param2
+        self.pc += 4
 
-    def execute(self):
-        self.is_executing = True
-        while(self.pc < len(self.ints)):
-            # print(f'Program Counter: {pc}')
-            return_value = self.run_instruction(self.pc, self.ints)
-            if (return_value == -1):
-                return -1
-            elif (return_value == -2):
-                self._execution_paused = True
-                return -2
-            else:
-                self.pc = return_value
-        return 0
+    def oc_mult(self, oc):
+        param1 = oc.param1_value(self.ints)
+        param2 = oc.param2_value(self.ints)
+        param3 = oc.param3_value(self.ints, mode = 1)
+        self.ints[param3] = param1 * param2
+        self.pc += 4
 
+    def oc_input(self, oc):
+        param1 = oc.param1_value(self.ints, mode = 1)
+        if(self._input_value == None):
+            raise WaitingForInputError()
+        input_value = self._input_value
+        self.ints[param1] = int(input_value)
+        self._input_value = None
+        self.pc += 2
 
-    def run_instruction(self, ip, ints):
-        # returns length of instruction executed, or -1 to halt program execution
-        inst = ints[ip]
-        inst_string = f'{inst:#05}' # 5 = max number of digits for an instruction
-        opcode = int(inst_string[-2:])
-        if (opcode == 1): # addition. 3 parameters
-            # print('Add')
-            param1_mode = int(inst_string[-3])
-            param2_mode = int(inst_string[-4])
-            inst_str = 'Add'
-            # param3_mode = inst_string[-5] Don't need this since it's the output
+    def oc_output(self, oc):
+        param1 = oc.param1_value(self.ints)
+        self._output = param1
+        self._output_available = True
+        self.pc += 2
 
-            if (param1_mode == 0): # 0 is position mode
-                param1 = ints[ints[ip + 1]]
-                inst_str += f' ({ints[ip +1]}) -> {ints[ints[ip+1]]}'
-            elif (param1_mode == 1): # 1 is immediate mode
-                param1 = ints[ip + 1]
-                inst_str += f' {ints[ip+1]}'
-
-            if (param2_mode == 0): # 0 is position mode
-                param2 = ints[ints[ip + 2]]
-                inst_str += f' + ({ints[ip +2]}) -> {ints[ints[ip+2]]}'
-            elif (param2_mode == 1): # 1 is immediate mode
-                param2 = ints[ip + 2]
-                inst_str += f' + {ints[ip+2]}'
-
-            param3 = ints[ip + 3] # always position mode
-            inst_str += f' => ({param3})'
-            ints[param3] = param1 + param2
-            return ip+4
-
-        elif (opcode == 2): # multiplication. 3 parameters
-            # multiply
-            # print('Multiply')
-            param1_mode = int(inst_string[-3])
-            param2_mode = int(inst_string[-4])
-            # param3_mode = inst_string[-5] Don't need this since it's the output
-
-            if (param1_mode == 0): # 0 is position mode
-                param1 = ints[ints[ip + 1]] # dereference
-            elif (param1_mode == 1): # 1 is immediate mode
-                param1 = ints[ip + 1]
-
-            if (param2_mode == 0): # 0 is position mode
-                param2 = ints[ints[ip + 2]]
-            elif (param2_mode == 1): # 1 is immediate mode
-                param2 = ints[ip + 2]
-
-            param3 = ints[ip + 3] # always position mode
-            ints[param3] = param1 * param2
-            return ip+4
-
-        elif (opcode == 3): #input
-            if (self._input_instruction == 0):
-                input_value = self._phase
-            elif (self._input_instruction >= 1):
-                input_value = self._input_delegate()
-                if(input_value == None):
-                    return -2
-            # input_value = input('Enter input')
-            self._input_instruction += 1
-            ints[ints[ip+1]] = int(input_value)
-            return ip+2
-
-        elif (opcode == 4): #output
-            param1_mode = int(inst_string[-3])
-            if param1_mode == 0:
-                test_result = ints[ints[ip+1]]
-            elif param1_mode == 1:
-                test_result = ints[ip+1]
-            self._output = test_result
-            self._output_available = True
-            print(f'Test: {test_result}')
-            return ip+2
-
-        elif (opcode == 5): # jump-if-true: if the first parameter is non-zero, it sets the instruction pointer to the value from the second parameter. Otherwise, it does nothing.
-            param1_mode = int(inst_string[-3])
-            param2_mode = int(inst_string[-4])
-            if (param1_mode == 0): # 0 is position mode
-                param1 = ints[ints[ip + 1]] # dereference
-            elif (param1_mode == 1): # 1 is immediate mode
-                param1 = ints[ip + 1]
-
-            if (param2_mode == 0): # 0 is position mode
-                param2 = ints[ints[ip + 2]]
-            elif (param2_mode == 1): # 1 is immediate mode
-                param2 = ints[ip + 2]
-
-            if param1 != 0:
-                return param2
-            else:
-                return ip+3
-
-        elif (opcode == 6): # jump-if-false: if the first parameter is zero, it sets the instruction pointer to the value from the second parameter. Otherwise, it does nothing.
-            param1_mode = int(inst_string[-3])
-            param2_mode = int(inst_string[-4])
-            if (param1_mode == 0): # 0 is position mode
-                param1 = ints[ints[ip + 1]] # dereference
-            elif (param1_mode == 1): # 1 is immediate mode
-                param1 = ints[ip + 1]
-
-            if (param2_mode == 0): # 0 is position mode
-                param2 = ints[ints[ip + 2]]
-            elif (param2_mode == 1): # 1 is immediate mode
-                param2 = ints[ip + 2]
-
-            if param1 == 0:
-                return param2
-            else:
-                return ip+3
-
-        elif (opcode == 7): # less than: if the first parameter is less than the second parameter, it stores 1 in the position given by the third parameter. Otherwise, it stores 0.
-            param1_mode = int(inst_string[-3])
-            param2_mode = int(inst_string[-4])
-            if (param1_mode == 0): # 0 is position mode
-                param1 = ints[ints[ip + 1]] # dereference
-            elif (param1_mode == 1): # 1 is immediate mode
-                param1 = ints[ip + 1]
-
-            if (param2_mode == 0): # 0 is position mode
-                param2 = ints[ints[ip + 2]]
-            elif (param2_mode == 1): # 1 is immediate mode
-                param2 = ints[ip + 2]
-
-            param3 = ints[ip+3]
-
-            if param1 < param2:
-                ints[param3] = 1
-            else:
-                ints[param3] = 0
-            
-            return ip + 4
-
-        elif (opcode == 8): # equals: if the first parameter is equal to the second parameter, it stores 1 in the position given by the third parameter. Otherwise, it stores 0.
-            param1_mode = int(inst_string[-3])
-            param2_mode = int(inst_string[-4])
-            if (param1_mode == 0): # 0 is position mode
-                param1 = ints[ints[ip + 1]] # dereference
-            elif (param1_mode == 1): # 1 is immediate mode
-                param1 = ints[ip + 1]
-
-            if (param2_mode == 0): # 0 is position mode
-                param2 = ints[ints[ip + 2]]
-            elif (param2_mode == 1): # 1 is immediate mode
-                param2 = ints[ip + 2]
-
-            param3 = ints[ip+3]
-
-            if param1 == param2:
-                ints[param3] = 1
-            else:
-                ints[param3] = 0
-            
-            return ip + 4
-        elif (opcode == 99):
-            # halt
-            # print('Halt')
-            return -1
+    def oc_jmpT(self, oc):
+        param1 = oc.param1_value(self.ints)
+        param2 = oc.param2_value(self.ints)
+        if param1 != 0:
+            self.pc = param2
         else:
-            print(f'Invalid instruction: {inst}')
+            self.pc += 2
+
+    def oc_jmpF(self, oc):
+        param1 = oc.param1_value(self.ints)
+        param2 = oc.param2_value(self.ints)
+        if param1 == 0:
+            self.pc = param2
+        else:
+            self.pc += 3
+
+    def oc_lt(self, oc):
+        param1 = oc.param1_value(self.ints)
+        param2 = oc.param2_value(self.ints)
+        param3 = oc.param3_value(self.ints, mode = 1)
+        if param1 < param2:
+            self.ints[param3] = 1
+        else:
+            self.ints[param3] = 0
+        self.pc += 4
+
+    def oc_eq(self, oc):
+        param1 = oc.param1_value(self.ints)
+        param2 = oc.param2_value(self.ints)
+        param3 = oc.param3_value(self.ints, mode = 1)
+        if param1 == param2:
+            self.ints[param3] = 1
+        else:
+            self.ints[param3] = 0
+        self.pc += 4
+
+    def oc_halt(self, oc):
+        self._halted = True
+        raise ProgramTerminatedError()
+
+    def run_instruction(self):
+        # returns length of instruction executed, or -1 to halt program execution
+        oc = Opcode(self.ints, self.pc)
+        self._opcodes[oc.opcode](oc)
+
+    def run_to_end(self):
+        while(self.pc < len(self.ints) and not self._halted):
+            self.run_instruction()
+            # print(f'Program Counter: {pc}')
+            # try:
+            #     self.run_instruction()
+            # except ProgramTerminatedError:
+            #     return -1
+            # except WaitingForInputError:
+            #     return -2
 
     def load_memory(self, file):
         f = open(file)
@@ -213,96 +197,57 @@ class IntCodeComputer():
         ints = [int(x) for x in ints_str]
         return ints
 
+
 amp_settings = list(permutations(range(5, 10)))
 
-global ampA_ready, ampB_ready, ampC_ready, ampD_ready, ampE_ready
-global ampE_called_prior
-global ampA, ampB, ampC, ampD, ampE
-
-ampE_called_prior = False
-ampA_ready = False
-ampB_ready = False
-ampC_ready = False
-ampD_ready = False
-ampE_ready = False
-
-def getOutputA():
-    global ampA, ampA_ready
-
-    if(ampA_ready):
-        ampA_ready = False
-        return ampA.output
-    else:
-        return None
-
-def getOutputB():
-    global ampB, ampB_ready
-    if(ampB_ready):
-        ampB_ready = False
-        return ampB.output
-    else:
-        return None
-
-def getOutputC():
-    global ampC, ampC_ready
-    if(ampC_ready):
-        ampC_ready = False
-        return ampC.output
-    else:
-        return None
-
-def getOutputD():
-    global ampD, ampD_ready
-    if(ampD_ready):
-        ampD_ready = False
-        return ampD.output
-    else:
-        return None
-
-def getOutputE():
-    global ampE, ampE_ready
-    global ampE_called_prior
-    if (ampE_called_prior):
-        ampE_called_prior = True
-        if(ampE_ready):
-            ampE_ready = False
-            return ampE.output
-        else:
-            return None
-    else:
-        ampE_called_prior = True
-        return 0
-
-
 outputs = []
-for amp_setting in amp_settings:
 
-    ampA = IntCodeComputer(amp_setting[0], getOutputE)
-    ampB = IntCodeComputer(amp_setting[1], getOutputA)
-    ampC = IntCodeComputer(amp_setting[2], getOutputB)
-    ampD = IntCodeComputer(amp_setting[3], getOutputC)
-    ampE = IntCodeComputer(amp_setting[4], getOutputD)
+# amp_setting = amp_settings[0]
+
+# amp_settings = []
+# amp_settings.append(amp_setting)
+
+
+for amp_setting_index, amp_setting in enumerate(amp_settings):
+    print('Running Iteration')
+    ampA = IntCodeComputer()
+    ampB = IntCodeComputer()
+    ampC = IntCodeComputer()
+    ampD = IntCodeComputer()
+    ampE = IntCodeComputer()
+
+    amps = [ampA, ampB, ampC, ampD, ampE]
+
+    for index, amp in enumerate(amps):
+        try:
+            amp.set_input(amp_setting[index])
+            amp.run_to_end()
+        except WaitingForInputError:
+            print(f'Done setting up amp {index}')
+
     retcode = 0
-    while(retcode != -1):
-        # print('Running')
-        retcode = ampA.execute()
-        retcode = ampB.execute()
-        retcode = ampC.execute()
-        retcode = ampD.execute()
-        retcode = ampE.execute()
-        ampA_ready = ampA.output_available
-        ampB_ready = ampB.output_available
-        ampC_ready = ampC.output_available
-        ampD_ready = ampD.output_available
-        ampE_ready = ampE.output_available
-        # print(f'A:{ampA_ready} B:{ampB_ready} C:{ampC_ready} D:{ampD_ready} E:{ampE_ready}')
+    prev_out = 0
 
-    outputs.append(ampE.output)
-    
+    while (retcode == 0):
+        for index, amp in enumerate(amps):
+            try:
+                amp.set_input(prev_out)
+                amp.run_to_end()
+            except WaitingForInputError:
+                pass
+            except ProgramTerminatedError:
+                retcode = -1
+            finally:
+                out = amp.output
+                print(f'Final output = {out}')
+                prev_out = out
+
+        outputs.append((amp_setting_index, ampE.output))
+        
 max_output = [0,0]
-for index, value in enumerate(outputs):
-    if value > max_output[0]:
-        max_output[0] = value
-        max_output[1] = index
-max_amp_settings = amp_settings[max_output[1]]
-print(f'Max Output = {max_output[0]}. Using Settings: {max_amp_settings}')
+for value in outputs:
+    if value[1] > max_output[1]:
+        max_output[1] = value[1]
+        max_output[0] = value[0]
+
+print(f'Max output = [{max_output[1]}] using amplifier settings: {amp_settings[max_output[0]]}')

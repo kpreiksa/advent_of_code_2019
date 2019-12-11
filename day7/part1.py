@@ -67,13 +67,14 @@ class Opcode():
 
 
 class IntCodeComputer():
-    def __init__(self, phase, input_value):
-        self.output = 0
+    def __init__(self):
+        self._output = 0
+        self._output_available = False
         self.ints = self.load_memory('input.txt')
         self.pc = 0 # program counter
         self._input_instruction = 0
-        self._phase = phase
-        self._input_value = input_value
+        self._input_value = None
+        self._halted = False
         self._opcodes = {
             1: self.oc_add,
             2: self.oc_mult,
@@ -85,6 +86,20 @@ class IntCodeComputer():
             8: self.oc_eq,
             99:self.oc_halt,
         }
+
+    def set_input(self, in_value):
+        self._input_value = in_value
+
+    @property
+    def output(self):
+        if self._output_available:
+            return self._output
+        else:
+            return None
+
+    @property
+    def output_available(self):
+        return self._output_available
 
     def oc_add(self, oc):
         param1 = oc.param1_value(self.ints)
@@ -102,17 +117,17 @@ class IntCodeComputer():
 
     def oc_input(self, oc):
         param1 = oc.param1_value(self.ints, mode = 1)
-        if (self._input_instruction == 0):
-            input_value = self._phase
-        elif (self._input_instruction == 1):
-            input_value = self._input_value
-        self._input_instruction += 1
+        if(self._input_value == None):
+            raise WaitingForInputError()
+        input_value = self._input_value
         self.ints[param1] = int(input_value)
+        self._input_value = None
         self.pc += 2
 
     def oc_output(self, oc):
         param1 = oc.param1_value(self.ints)
-        self.output = param1
+        self._output = param1
+        self._output_available = True
         self.pc += 2
 
     def oc_jmpT(self, oc):
@@ -152,6 +167,7 @@ class IntCodeComputer():
         self.pc += 4
 
     def oc_halt(self, oc):
+        self._halted = True
         raise ProgramTerminatedError()
 
     def run_instruction(self):
@@ -160,12 +176,15 @@ class IntCodeComputer():
         self._opcodes[oc.opcode](oc)
 
     def run_to_end(self):
-        while(self.pc < len(self.ints)):
+        while(self.pc < len(self.ints) and not self._halted):
+            self.run_instruction()
             # print(f'Program Counter: {pc}')
-            try:
-                self.run_instruction()
-            except ProgramTerminatedError:
-                break
+            # try:
+            #     self.run_instruction()
+            # except ProgramTerminatedError:
+            #     return -1
+            # except WaitingForInputError:
+            #     return -2
 
     def load_memory(self, file):
         f = open(file)
@@ -179,16 +198,29 @@ amp_settings = list(permutations(range(0, 5)))
 outputs = []
 for amp_setting in amp_settings:
 
-    ampA = IntCodeComputer(amp_setting[0], 0)
-    ampA.run_to_end()
-    ampB = IntCodeComputer(amp_setting[1], ampA.output)
-    ampB.run_to_end()
-    ampC = IntCodeComputer(amp_setting[2], ampB.output)
-    ampC.run_to_end()
-    ampD = IntCodeComputer(amp_setting[3], ampC.output)
-    ampD.run_to_end()
-    ampE = IntCodeComputer(amp_setting[4], ampD.output)
-    ampE.run_to_end()
+    ampA = IntCodeComputer()
+    ampB = IntCodeComputer()
+    ampC = IntCodeComputer()
+    ampD = IntCodeComputer()
+    ampE = IntCodeComputer()
+
+    amps = [ampA, ampB, ampC, ampD, ampE]
+
+    for index, amp in enumerate(amps):
+        try:
+            amp.set_input(amp_setting[index])
+            amp.run_to_end()
+        except WaitingForInputError:
+            print(f'Done setting up amp {index}')
+
+    prev_out = 0
+    for index, amp in enumerate(amps):
+        try:
+            amp.set_input(prev_out)
+            amp.run_to_end()
+        except:
+            prev_out = amp.output
+
     outputs.append(ampE.output)
     
 max_output = [0,0]
