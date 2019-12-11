@@ -1,5 +1,112 @@
 orbits = {}
-f = open('example_data_santa.txt')
+
+class Node():
+    def __init__(self, name, parent = None):
+        self._name = name
+        self._parent = parent
+        self._children = [] # List of Nodes
+
+    def __eq__(self, other):
+        if (isinstance(other, Node)):
+            return self.name == other.name
+        else:
+            return False
+
+    @property
+    def isRootNode(self):
+        return self._parent == None
+
+    def __repr__(self):
+        if self._parent:
+            return(f'Node: "{self._name}". Parent: {self._parent.name} Children: [{self._children}]')
+        else:
+            return(f'Root Node: "{self._name}" Children: [{self._children}]')
+
+    # def findCommonParent(self, other):
+    #     while self._parent != other._parent:
+    #         self.
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def children(self):
+        return self._children
+
+    @property
+    def numChildren(self):
+        if self._children:
+            return len(self._children)
+        else:
+            return 0
+    
+    @property
+    def depthFromRoot(self):
+        if self.isRootNode:
+            return 0
+        else:
+            return self._parent.depthFromRoot + 1
+
+    def depthFromNode(self, otherNode):
+        if self == otherNode:
+            return 0
+        else:
+            return self._parent.depthFromNode(otherNode) + 1
+
+    def pathToRoot(self):
+        lst = []
+        n = self
+        while not n.isRootNode:
+            n = n._parent
+            lst.append(n)
+        return lst
+    
+    @property
+    def childrenDict(self):
+        return {x.name: x for x in self._children}
+
+    def findChild(self, childID):
+        if self.numChildren == 0:
+            return None
+        if childID in self.childrenDict:
+            return self.childrenDict[childID]
+        else:
+            for child in self.children:
+                found_child = child.findChild(childID)
+                if found_child:
+                    return found_child
+
+
+    def getChild(self, childID):
+        if isinstance(childID, int):
+            return self.children[childID]
+        elif isinstance(childID, str):
+            return self.childrenDict[childID]
+
+    def addChild(self, child):
+        childNode = Node(child, self)
+        self._children.append(childNode)
+
+    def addChildren(self, children):
+        childrenNodes = [Node(child, self) for child in children]
+        self._children.extend(childrenNodes)
+
+    def populate(self, orbits):
+        if self._name in orbits:
+            children = orbits[self._name]
+            if (isinstance(children, list)):
+                self.addChildren(children)
+            else:
+                self.addChild(children)
+
+            for child in self._children:
+                child.populate(orbits)
+        else:
+            self._children = None
+
+
+f = open('input.txt')
 lines = f.readlines()
 total_orbits = 0
 for line in lines:
@@ -14,92 +121,28 @@ for line in lines:
     else:
         raise ValueError('Expected 2 objects')
 
-def compute_orbits(object_to_check):
-    # print(f'Checking orbits for {object_to_check}')
-    orbits_for_object = 0
-    if(object_to_check in orbits):
-        orbits_for_object += len(orbits[object_to_check])
-        # print(f'{object_to_check} has {len(orbits[object_to_check])} orbits. Recursing.')
-        for next_object in orbits[object_to_check]:
-            orbits_for_object += compute_orbits(next_object)
-        # print(f'Object: {object_to_check} has {orbits_for_object} direct and indirect orbits')
-        return orbits_for_object
-    else:
-        return 0
+root = Node('COM')
+root.populate(orbits)
 
-def find_all_orbiting_object(object_to_check):
-    orbiting_objects = []
-    if(object_to_check in orbits):
-        objects_in_orbit = orbits[object_to_check]
-        for next_object in objects_in_orbit:
-            if (isinstance(next_object, list)):
-                orbiting_objects.extend(next_object)
-            else:
-                orbiting_objects.append(next_object)
-            next_level = find_all_orbiting_object(next_object)
-            if (isinstance(next_level, list)):
-                orbiting_objects.extend(next_level)
-            else:
-                orbiting_objects.append(next_level)
+san_node = root.findChild('SAN')
+you_node = root.findChild('YOU')
 
-    return orbiting_objects
+path_root_to_san = san_node.pathToRoot()
+path_root_to_you = you_node.pathToRoot()
 
-def find_all_orbiting_objects_nested(object_to_check):
-    orbiting_objects = []
-    if(object_to_check in orbits):
-        objects_in_orbit = orbits[object_to_check]
-        for next_object in objects_in_orbit:
-            if (isinstance(next_object, list)):
-                orbiting_objects.append(next_object)
-            else:
-                orbiting_objects.append(next_object)
-            next_level = find_all_orbiting_objects_nested(next_object)
-            if (isinstance(next_level, list)):
-                orbiting_objects.append(next_level)
-            else:
-                orbiting_objects.append(next_level)
+path_root_to_san.reverse()
+path_root_to_you.reverse()
 
-    return orbiting_objects
+common_root = None
 
-def find_first_level_orbiting_objects(object_to_check):
-    orbiting_objects = []
-    if(object_to_check in orbits):
-        objects_in_orbit = orbits[object_to_check]
-        for next_object in objects_in_orbit:
-            if (isinstance(next_object, list)):
-                orbiting_objects.extend(next_object)
-            else:
-                orbiting_objects.append(next_object)
+for index, item in enumerate(path_root_to_san):
+    if item != path_root_to_you[index]:
+        common_root = path_root_to_san[index-1]
+        break
 
-    return orbiting_objects
+depth_you = you_node.depthFromNode(common_root)
+depth_san = san_node.depthFromNode(common_root)
 
-def isValueOrbiting(object_to_check, name):
-    if name in find_all_orbiting_object(object_to_check):
-        return True
-    else:
-        return False
+orb_transfers = depth_you + depth_san - 2 # - 2 because we are transfering from your parent to san's parent
 
-def find_parent(obj_name):
-    for k,v in orbits.items():
-        if obj_name in v:
-            return k
-
-
-parent = find_parent('YOU')
-retVal = isValueOrbiting(parent, 'SAN')
-orbit_steps = 0
-while retVal == False:
-    parent = find_parent(parent)
-    orbit_steps += 1
-    retVal = isValueOrbiting(parent, 'SAN')
-    print(retVal)
-common_parent = parent
-all_objs = find_all_orbiting_objects_nested(common_parent)
-
-
-orbit_all = {}
-for k in orbits.keys():
-    orbit_all[k] = find_all_orbiting_object(k)
-    total_orbits += compute_orbits(k)
-
-print(total_orbits)
+print(orb_transfers)
