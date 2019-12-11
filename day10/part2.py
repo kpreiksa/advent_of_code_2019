@@ -82,35 +82,42 @@ for row_index, row in enumerate(lines):
             all_lines_to_others.append(None)
             destruction_index.append(999999999999)
 
+# FIND BEST STATION - START
 
-# for index, asteroid in enumerate(asteroids):
-#     lines_to_others = []
-#     for asteroid2 in asteroids:
-#         if asteroid2 != asteroid:
-#             lines_to_others.append(asteroid.getLineToOther(asteroid2))
+for index, asteroid in enumerate(asteroids):
+    lines_to_others = []
+    for asteroid2 in asteroids:
+        if asteroid2 != asteroid:
+            lines_to_others.append(asteroid.getLineToOther(asteroid2))
 
-#     valid_lines = []
-#     for line_to_other in lines_to_others:
-#         line_obscured = False
-#         for asteroid3 in asteroids:
-#             if asteroid3 != line_to_other.begin and asteroid3 != line_to_other.end:
-#                 if line_to_other.PassesThroughPoint(asteroid3):
-#                     line_obscured = True
-#         if not line_obscured:
-#             valid_lines.append(line_to_other)
-#     all_lines_to_others[index] = valid_lines
+    valid_lines = []
+    for line_to_other in lines_to_others:
+        line_obscured = False
+        for asteroid3 in asteroids:
+            if asteroid3 != line_to_other.begin and asteroid3 != line_to_other.end:
+                if line_to_other.PassesThroughPoint(asteroid3):
+                    line_obscured = True
+        if not line_obscured:
+            valid_lines.append(line_to_other)
+    all_lines_to_others[index] = valid_lines
 
-# max_visible = [0,0, None]
-# for index, asteroid in enumerate(asteroids):
-#     if len(asteroid) > max_visible[1]:
-#         max_visible[0] = asteroid
-#         max_visible[1] = len(asteroid)
-#         max_visible[2] = all_lines_to_others[index]
+max_visible = [0,0, None]
+for index, asteroid in enumerate(asteroids):
+    if len(all_lines_to_others[index]) > max_visible[1]:
+        max_visible[0] = asteroid
+        max_visible[1] = len(all_lines_to_others[index])
+        max_visible[2] = all_lines_to_others[index]
 
-# blast_station = max_visible[0]
-# blast_station_lines = max_visible[2]
+blast_station = max_visible[0]
 
-blast_station = Point(17,22)
+# FIND BEST STATION - END
+
+# USE BEST STATION - START
+
+# blast_station = Point(17,22)
+
+# USE BEST STATION - END
+
 blast_station_lines = []
 
 destruction_count = 0
