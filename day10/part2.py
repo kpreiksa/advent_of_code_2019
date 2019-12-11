@@ -101,7 +101,7 @@ for index, asteroid in enumerate(asteroids):
             valid_lines.append(line_to_other)
     all_lines_to_others[index] = valid_lines
 
-max_visible = [0,0, None]
+max_visible = [None,0, None]
 for index, asteroid in enumerate(asteroids):
     if len(all_lines_to_others[index]) > max_visible[1]:
         max_visible[0] = asteroid
