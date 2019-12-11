@@ -17,6 +17,16 @@ class Opcode():
         self._raw_opcode = ints[pc]
         self._address = pc
         self._inst_string = f'{self._raw_opcode:#05}' # 5 = max number of digits for an instruction
+        self._params = {}
+        self._params_io = ['UNKNOWN'] * 3
+
+    def set_param_info(self, param_info):
+        for index, value in enumerate(param_info):
+            if value == 1:
+                self._params_io[index] = 'OUTPUT'
+            elif value == 0:
+                self._params_io[index] = 'INPUT'
+
         
     @property
     def opcode(self):
@@ -35,23 +45,19 @@ class Opcode():
         return self._address+3
 
     def param1_value(self, mem, mode = None):
-        if not mode:
-            mode = self.param1_mode
 
-        if (mode == 0):
+        if (self.param1_mode == 0 and self._params_io[0] != 'OUTPUT'):
             return mem[mem[self.param1_addr]]
 
-        elif (mode == 1): 
+        else: # if mode is immediate OR param type is output... 
             return mem[self.param1_addr]
 
     def param2_value(self, mem, mode = None):
-        if not mode:
-            mode = self.param2_mode
-
-        if (mode == 0):
+ 
+        if (self.param2_mode == 0 and self._params_io[1] != 'OUTPUT'):
             return mem[mem[self.param2_addr]]
 
-        elif (mode == 1): 
+        else: # if mode is immediate OR param type is output... 
             return mem[self.param2_addr]
 
     def param3_value(self, mem, mode = None):
@@ -80,15 +86,15 @@ class IntCodeComputer():
         self._input_value = None
         self._halted = False
         self._opcodes = {
-            1: self.oc_add,
-            2: self.oc_mult,
-            3: self.oc_input,
-            4: self.oc_output,
-            5: self.oc_jmpT,
-            6: self.oc_jmpF,
-            7: self.oc_lt,
-            8: self.oc_eq,
-            99:self.oc_halt,
+            1: (self.oc_add, [0,0,1]),
+            2: (self.oc_mult, [0,0,1]),
+            3: (self.oc_input, [1]),
+            4: (self.oc_output, [0]),
+            5: (self.oc_jmpT, [0,0]),
+            6: (self.oc_jmpF, [0,0]),
+            7: (self.oc_lt, [0,0,1]),
+            8: (self.oc_eq, [0,0,1]),
+            99:(self.oc_halt, []),
         }
 
     def set_input(self, in_value):
@@ -108,19 +114,19 @@ class IntCodeComputer():
     def oc_add(self, oc):
         param1 = oc.param1_value(self.ints)
         param2 = oc.param2_value(self.ints)
-        param3 = oc.param3_value(self.ints, mode = 1)
+        param3 = oc.param3_value(self.ints)
         self.ints[param3] = param1 + param2
         self.pc += 4
 
     def oc_mult(self, oc):
         param1 = oc.param1_value(self.ints)
         param2 = oc.param2_value(self.ints)
-        param3 = oc.param3_value(self.ints, mode = 1)
+        param3 = oc.param3_value(self.ints)
         self.ints[param3] = param1 * param2
         self.pc += 4
 
     def oc_input(self, oc):
-        param1 = oc.param1_value(self.ints, mode = 1)
+        param1 = oc.param1_value(self.ints)
         if(self._input_value == None):
             raise WaitingForInputError()
         input_value = self._input_value
@@ -153,7 +159,7 @@ class IntCodeComputer():
     def oc_lt(self, oc):
         param1 = oc.param1_value(self.ints)
         param2 = oc.param2_value(self.ints)
-        param3 = oc.param3_value(self.ints, mode = 1)
+        param3 = oc.param3_value(self.ints)
         if param1 < param2:
             self.ints[param3] = 1
         else:
@@ -163,7 +169,7 @@ class IntCodeComputer():
     def oc_eq(self, oc):
         param1 = oc.param1_value(self.ints)
         param2 = oc.param2_value(self.ints)
-        param3 = oc.param3_value(self.ints, mode = 1)
+        param3 = oc.param3_value(self.ints)
         if param1 == param2:
             self.ints[param3] = 1
         else:
@@ -177,7 +183,12 @@ class IntCodeComputer():
     def run_instruction(self):
         # returns length of instruction executed, or -1 to halt program execution
         oc = Opcode(self.ints, self.pc)
-        self._opcodes[oc.opcode](oc)
+
+        oc_func = self._opcodes[oc.opcode][0]
+        oc_info = self._opcodes[oc.opcode][1]
+        oc.set_param_info(oc_info)
+        
+        oc_func(oc)
 
     def run_to_end(self):
         while(self.pc < len(self.ints) and not self._halted):
@@ -209,7 +220,6 @@ outputs = []
 
 
 for amp_setting_index, amp_setting in enumerate(amp_settings):
-    print('Running Iteration')
     ampA = IntCodeComputer()
     ampB = IntCodeComputer()
     ampC = IntCodeComputer()
@@ -223,7 +233,7 @@ for amp_setting_index, amp_setting in enumerate(amp_settings):
             amp.set_input(amp_setting[index])
             amp.run_to_end()
         except WaitingForInputError:
-            print(f'Done setting up amp {index}')
+            pass
 
     retcode = 0
     prev_out = 0
@@ -239,7 +249,6 @@ for amp_setting_index, amp_setting in enumerate(amp_settings):
                 retcode = -1
             finally:
                 out = amp.output
-                print(f'Final output = {out}')
                 prev_out = out
 
         outputs.append((amp_setting_index, ampE.output))
