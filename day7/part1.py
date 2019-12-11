@@ -13,59 +13,54 @@ class Opcode():
         self._raw_opcode = ints[pc]
         self._address = pc
         self._inst_string = f'{self._raw_opcode:#05}' # 5 = max number of digits for an instruction
-        self._params = {}
-        self._params_io = ['UNKNOWN'] * 3
+        self._params = [{'supported': False}] * 3
 
     def set_param_info(self, param_info):
         for index, value in enumerate(param_info):
+            param_info = {}
+            param_info['supported'] = True
+            param_info['mode'] = 'UNKNOWN'
+            param_info['addr'] = self._address + index + 1
             if value == 1:
-                self._params_io[index] = 'OUTPUT'
+                param_info['type'] = 'OUTPUT'
+                mode = int(self._inst_string[-3 - index])
+                if mode != 1: # don't allow immediate mode for output
+                    param_info['mode'] = mode
+                else:
+                    param_info['mode'] = 0
             elif value == 0:
-                self._params_io[index] = 'INPUT'
+                param_info['type'] = 'INPUT'
+                mode = int(self._inst_string[-3 - index])
+                param_info['mode'] = mode
+            
+            self._params[index] = param_info
 
         
     @property
     def opcode(self):
         return int(self._inst_string[-2:])
 
-    @property
-    def param1_addr(self):
-        return self._address+1
-
-    @property
-    def param2_addr(self):
-        return self._address+2
-
-    @property
-    def param3_addr(self):
-        return self._address+3
-
     def param1_value(self, mem, mode = None):
+        param_info = self._params[0]
 
-        if (self.param1_mode == 0 and self._params_io[0] != 'OUTPUT'):
-            return mem[mem[self.param1_addr]]
+        if (param_info['mode'] == 0 and param_info['type'] != 'OUTPUT'):
+            return mem[mem[param_info['addr']]]
 
         else: # if mode is immediate OR param type is output... 
-            return mem[self.param1_addr]
+            return mem[param_info['addr']]
 
     def param2_value(self, mem, mode = None):
+        param_info = self._params[1]
  
-        if (self.param2_mode == 0 and self._params_io[1] != 'OUTPUT'):
-            return mem[mem[self.param2_addr]]
+        if (param_info['mode'] == 0 and param_info['type'] != 'OUTPUT'):
+            return mem[mem[param_info['addr']]]
 
         else: # if mode is immediate OR param type is output... 
-            return mem[self.param2_addr]
+            return mem[param_info['addr']]
 
     def param3_value(self, mem, mode = None):
-        return mem[self.param3_addr]
-
-    @property
-    def param1_mode(self):
-        return int(self._inst_string[-3])
-
-    @property
-    def param2_mode(self):
-        return int(self._inst_string[-4])
+        param_info = self._params[2]
+        return mem[param_info['addr']]
 
     @property
     def address(self):
