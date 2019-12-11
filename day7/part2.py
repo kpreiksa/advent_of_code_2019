@@ -34,14 +34,16 @@ class Opcode():
     def address(self):
         return self._address
 
-    def get_param(self, index, mem, rel_base):
+    def get_param(self, index, mem, rel_base, mode = None):
         param_info = self._params[index]
-        if (param_info['mode'] == 0):
+        if not mode:
+            mode = param_info['mode']
+        if (mode == 0):
             return mem[mem[param_info['addr']]]
-        elif (param_info['mode'] == 1): # if mode is immediate OR param type is output... 
+        elif (mode == 1): # if mode is immediate OR param type is output... 
             return mem[param_info['addr']]
         else:
-            return mem[mem[param_info['addr'] + rel_base]]
+            return mem[mem[param_info['addr']] + rel_base]
 
     def set_param(self, index, mem, value, rel_base):
         param_info = self._params[index]
@@ -50,7 +52,7 @@ class Opcode():
         elif(param_info['mode'] == 1):
             raise ValueError('Got immediate mode for output')
         else:
-            mem[mem[param_info['addr'] + rel_base]] = value
+            mem[mem[param_info['addr']] + rel_base] = value
 
 class IntCodeMemory():
     def __init__(self, file):
