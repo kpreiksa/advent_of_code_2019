@@ -1,6 +1,7 @@
 
 from itertools import permutations 
 import time
+from PIL import Image
 
 class ProgramTerminatedError(Exception):
     pass
@@ -211,7 +212,7 @@ class IntCodeComputer():
 
 class Panel():
     def __init__(self):
-        print('Creating Panel')
+        # print('Creating Panel')
         self._color = 0 # initially black. 1 = White
         self._painted = False
 
@@ -237,18 +238,21 @@ class Panel():
         return self._painted
 
     def paint(self, color):
-        print('Painting panel')
+        # print('Painting panel')
         self._painted = True
         self._color = color
 
 
 class Grid():
     def __init__(self, x, y):
+        self._width = x
+        self._height = y
+
         self._panels = []
         
-        for row in range(0, y + 1):
+        for row in range(0, y):
             row_panels = []
-            for col in range(0, x + 1):
+            for col in range(0, x):
                 row_panels.append(Panel())
             self._panels.append(row_panels)
 
@@ -266,6 +270,18 @@ class Grid():
     def paintPanel(self, x,y, color):
         self._panels[y][x].paint(color)
 
+    def toImage(self, filename):
+        image_raw_data = []
+        for row in self._panels:
+            for panel in row:
+                if(panel.color == 0):
+                    image_raw_data.append((0,0,0)) # black
+                else:
+                    image_raw_data.append((255,255,255)) # white
+        im= Image.new('RGB', (self._width, self._height))
+        im.putdata(image_raw_data)
+        im.save(filename)
+
     def numberPaintedPanels(self):
         numPainted = 0
 
@@ -280,15 +296,16 @@ class Grid():
 
 class EHPR():
     def __init__(self):
-        self._grid = Grid(500,500) # KLUDGE ALERT! 500x500 grid is arbitrary.
+        self._grid = Grid(501,501) # KLUDGE ALERT! 500x500 grid is arbitrary.
+        # self._grid.paintPanel(251,251,1)
         self._icc = IntCodeComputer()
-        self._x_pos = 0
-        self._y_pos = 0
+        self._x_pos = 251
+        self._y_pos = 251
         self._dir = 'U'
 
     def move(self):
-        print('moving')
-        print(f'current position: ({self._x_pos},{self._y_pos})')
+        # print('moving')
+        # print(f'current position: ({self._x_pos},{self._y_pos})')
         if self._dir == 'U':
             self._y_pos = self._y_pos - 1
         elif self._dir == 'D':
@@ -297,11 +314,11 @@ class EHPR():
             self._x_pos = self._x_pos - 1
         elif self._dir == 'R':
             self._x_pos = self._x_pos + 1
-        print(f'new position: ({self._x_pos},{self._y_pos})')
+        # print(f'new position: ({self._x_pos},{self._y_pos})')
 
     def rotateCCW(self):
-        print('rotating CCW')
-        print(f'Current direction: {self._dir}')
+        # print('rotating CCW')
+        # print(f'Current direction: {self._dir}')
         if self._dir == 'U':
             self._dir = 'L'
         elif self._dir == 'L':
@@ -310,12 +327,12 @@ class EHPR():
             self._dir = 'R'
         elif self._dir == 'R':
             self._dir = 'U'
-        print(f'new direction: {self._dir}')
+        # print(f'new direction: {self._dir}')
         self.move()
 
     def rotateCW(self):
-        print('rotating CW')
-        print(f'Current direction: {self._dir}')
+        # print('rotating CW')
+        # print(f'Current direction: {self._dir}')
         if self._dir == 'U':
             self._dir = 'R'
         elif self._dir == 'R':
@@ -324,7 +341,7 @@ class EHPR():
             self._dir = 'L'
         elif self._dir == 'L':
             self._dir = 'U'
-        print(f'new direction: {self._dir}')
+        # print(f'new direction: {self._dir}')
         self.move()
 
     def getCurrentPanelColor(self):
@@ -365,7 +382,9 @@ class EHPR():
                 print('Terminated')
                 terminated = True
                 
-
+ehpr = EHPR()
+ehpr.paint()
+numPaintedPanels = ehpr._grid.numberPaintedPanels()
 
 # boost = IntCodeComputer()
 # boost.set_input(1)
