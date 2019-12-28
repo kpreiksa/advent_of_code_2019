@@ -221,7 +221,6 @@ while not allMatched:
     #     allMatched = True
     #     break
 
-
 moon_matches_x_sets = [set(match) for match in moon_matches_x]
 moon_matches_y_sets = [set(match) for match in moon_matches_y]
 moon_matches_z_sets = [set(match) for match in moon_matches_z]
@@ -233,10 +232,10 @@ moon_match_z_set = moon_matches_z_sets[0] & moon_matches_z_sets[1] & moon_matche
 min_x = min(moon_match_x_set)
 min_y = min(moon_match_y_set)
 min_z = min(moon_match_z_set)
-
-print('Everything is the same at... ')
-print(np.lcm.reduce([min_x, min_y, min_z]))
+answer = np.lcm.reduce([min_x, min_y, min_z])
 
 end_time = datetime.datetime.now()
 time_diff = end_time - start_time
-print(time_diff)
+print(f'Everything is the same at [{answer}]. Solution took [{time_diff}]. Iterations = [{i}]')
+
+

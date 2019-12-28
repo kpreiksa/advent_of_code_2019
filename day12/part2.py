@@ -164,9 +164,8 @@ matchlist.append(moon_match_x)
 matchlist.append(moon_match_y)
 matchlist.append(moon_match_z)
 
-print('Everything is the same at... ')
-print(np.lcm.reduce(matchlist))
+answer = np.lcm.reduce(matchlist)
 
 end_time = datetime.datetime.now()
 time_diff = end_time - start_time
-print(time_diff)
+print(f'Everything is the same at [{answer}]. Solution took [{time_diff}]. Iterations = [{i}]')
