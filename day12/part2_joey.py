@@ -6,9 +6,6 @@ import datetime
 
 start_time = datetime.datetime.now()
 
-
-steps = 3000
-
 class Moon():
     def __init__(self, x, y, z):
         self._x_pos = int(x)
@@ -114,9 +111,19 @@ for moon in moons:
     initial_moons.append(newmoon)
 
 
-moon_match_x = 0
-moon_match_y = 0
-moon_match_z = 0
+moon_matches_x = [[],[],[],[]]
+moon_matches_y = [[],[],[],[]]
+moon_matches_z = [[],[],[],[]]
+
+def joeysshitsucks(moon_matches):
+    temp_list_of_sets = []
+
+    for match in moon_matches:
+        temp_list_of_sets.append(set(match))
+
+    temp_set = temp_list_of_sets[0] & temp_list_of_sets[1] & temp_list_of_sets[2] & temp_list_of_sets[3]
+    return len(temp_set)
+
 
 i = 0
 allMatched = False
@@ -135,37 +142,100 @@ while not allMatched:
     m2_x_eq = moons[2]._x_pos == initial_moons[2]._x_pos and moons[2]._x_vel == initial_moons[2]._x_vel
     m3_x_eq = moons[3]._x_pos == initial_moons[3]._x_pos and moons[3]._x_vel == initial_moons[3]._x_vel
 
-    if m0_x_eq and m1_x_eq and m2_x_eq and m3_x_eq and moon_match_x == 0:
-        moon_match_x = i+1
+    if m0_x_eq:
+        moon_matches_x[0].append(i+1)
+        if joeysshitsucks(moon_matches_x) > 0 and joeysshitsucks(moon_matches_y) > 0 and joeysshitsucks(moon_matches_z) > 0:
+            allMatched = True
+            break
+    if m1_x_eq:
+        moon_matches_x[1].append(i+1)
+        if joeysshitsucks(moon_matches_x) > 0 and joeysshitsucks(moon_matches_y) > 0 and joeysshitsucks(moon_matches_z) > 0:
+            allMatched = True
+            break
+    if m2_x_eq:
+        moon_matches_x[2].append(i+1)
+        if joeysshitsucks(moon_matches_x) > 0 and joeysshitsucks(moon_matches_y) > 0 and joeysshitsucks(moon_matches_z) > 0:
+            allMatched = True
+            break
+    if m3_x_eq:
+        moon_matches_x[3].append(i+1)
+        if joeysshitsucks(moon_matches_x) > 0 and joeysshitsucks(moon_matches_y) > 0 and joeysshitsucks(moon_matches_z) > 0:
+            allMatched = True
+            break
 
     m0_y_eq = moons[0]._y_pos == initial_moons[0]._y_pos and moons[0]._y_vel == initial_moons[0]._y_vel
     m1_y_eq = moons[1]._y_pos == initial_moons[1]._y_pos and moons[1]._y_vel == initial_moons[1]._y_vel
     m2_y_eq = moons[2]._y_pos == initial_moons[2]._y_pos and moons[2]._y_vel == initial_moons[2]._y_vel
     m3_y_eq = moons[3]._y_pos == initial_moons[3]._y_pos and moons[3]._y_vel == initial_moons[3]._y_vel
 
-    if m0_y_eq and m1_y_eq and m2_y_eq and m3_y_eq and moon_match_y == 0:
-        moon_match_y = i+1
+    if m0_y_eq:
+        moon_matches_y[0].append(i+1)
+        if joeysshitsucks(moon_matches_x) > 0 and joeysshitsucks(moon_matches_y) > 0 and joeysshitsucks(moon_matches_z) > 0:
+            allMatched = True
+            break
+    if m1_y_eq:
+        moon_matches_y[1].append(i+1)
+        if joeysshitsucks(moon_matches_x) > 0 and joeysshitsucks(moon_matches_y) > 0 and joeysshitsucks(moon_matches_z) > 0:
+            allMatched = True
+            break
+    if m2_y_eq:
+        moon_matches_y[2].append(i+1)
+        if joeysshitsucks(moon_matches_x) > 0 and joeysshitsucks(moon_matches_y) > 0 and joeysshitsucks(moon_matches_z) > 0:
+            allMatched = True
+            break
+    if m3_y_eq:
+        moon_matches_y[3].append(i+1)
+        if joeysshitsucks(moon_matches_x) > 0 and joeysshitsucks(moon_matches_y) > 0 and joeysshitsucks(moon_matches_z) > 0:
+            allMatched = True
+            break
+
 
     m0_z_eq = moons[0]._z_pos == initial_moons[0]._z_pos and moons[0]._z_vel == initial_moons[0]._z_vel
     m1_z_eq = moons[1]._z_pos == initial_moons[1]._z_pos and moons[1]._z_vel == initial_moons[1]._z_vel
     m2_z_eq = moons[2]._z_pos == initial_moons[2]._z_pos and moons[2]._z_vel == initial_moons[2]._z_vel
     m3_z_eq = moons[3]._z_pos == initial_moons[3]._z_pos and moons[3]._z_vel == initial_moons[3]._z_vel
 
-    if m0_z_eq and m1_z_eq and m2_z_eq and m3_z_eq and moon_match_z == 0:
-        moon_match_z = i+1
+    if m0_z_eq:
+        moon_matches_z[0].append(i+1)
+        if joeysshitsucks(moon_matches_x) > 0 and joeysshitsucks(moon_matches_y) > 0 and joeysshitsucks(moon_matches_z) > 0:
+            allMatched = True
+            break
+    if m1_z_eq:
+        moon_matches_z[1].append(i+1)
+        if joeysshitsucks(moon_matches_x) > 0 and joeysshitsucks(moon_matches_y) > 0 and joeysshitsucks(moon_matches_z) > 0:
+            allMatched = True
+            break
+    if m2_z_eq:
+        moon_matches_z[2].append(i+1)
+        if joeysshitsucks(moon_matches_x) > 0 and joeysshitsucks(moon_matches_y) > 0 and joeysshitsucks(moon_matches_z) > 0:
+            allMatched = True
+            break
+    if m3_z_eq:
+        moon_matches_z[3].append(i+1)
+        if joeysshitsucks(moon_matches_x) > 0 and joeysshitsucks(moon_matches_y) > 0 and joeysshitsucks(moon_matches_z) > 0:
+            allMatched = True
+            break
 
     i = i + 1
-    if moon_match_x > 0 and moon_match_y > 0 and moon_match_z > 0:
-        allMatched = True
-        break
+    # if joeysshitsucks(moon_matches_x) > 0 and joeysshitsucks(moon_matches_y) > 0 and joeysshitsucks(moon_matches_z) > 0:
+    #     allMatched = True
+    #     break
 
-matchlist = []
-matchlist.append(moon_match_x)
-matchlist.append(moon_match_y)
-matchlist.append(moon_match_z)
+
+moon_matches_x_sets = [set(match) for match in moon_matches_x]
+moon_matches_y_sets = [set(match) for match in moon_matches_y]
+moon_matches_z_sets = [set(match) for match in moon_matches_z]
+
+moon_match_x_set = moon_matches_x_sets[0] & moon_matches_x_sets[1] & moon_matches_x_sets[2] & moon_matches_x_sets[3]
+moon_match_y_set = moon_matches_y_sets[0] & moon_matches_y_sets[1] & moon_matches_y_sets[2] & moon_matches_y_sets[3]
+moon_match_z_set = moon_matches_z_sets[0] & moon_matches_z_sets[1] & moon_matches_z_sets[2] & moon_matches_z_sets[3]
+
+min_x = min(moon_match_x_set)
+min_y = min(moon_match_y_set)
+min_z = min(moon_match_z_set)
 
 print('Everything is the same at... ')
-print(np.lcm.reduce(matchlist))
+print(np.lcm.reduce([min_x, min_y, min_z]))
 
 end_time = datetime.datetime.now()
 time_diff = end_time - start_time
