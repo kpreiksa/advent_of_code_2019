@@ -195,9 +195,12 @@ class IntCodeMemory():
 
     def __setitem__(self, key, item):
         self._mem_dict[key] = item
-        for i in range(0,self._get_max_addr() + 1):
-            if i not in self._mem_dict.keys():
-                self._mem_dict[i] = 0 
+        # Previously, I would resize the memory every time it was written to.
+        # This was incredibly slow (see profiler results)
+        
+        # for i in range(0,self._get_max_addr() + 1):
+        #     if i not in self._mem_dict.keys():
+        #         self._mem_dict[i] = 0 
 
     def __getitem__(self, key):
         if key in self._mem_dict:
@@ -342,6 +345,8 @@ start_time = datetime.datetime.now()
 
 icc = IntCodeComputer()
 arcadeScreen = Screen(10,10)
+paddle_known = False
+paddle_x = 0
 
 outputs_ready = 0
 outputs_buffer = {}
@@ -358,27 +363,31 @@ while True:
             outputs_ready = 0
             if outputs_buffer[0] == -1 and outputs_buffer[1] == 0:
                 score = outputs_buffer[2]
-                print(f'Score: {score}')
-                print(arcadeScreen)
+                # print(f'Score: {score}')
+                # print(arcadeScreen)
                 total_score = score
             else:
                 arcadeScreen.addTile(outputs_buffer[0], outputs_buffer[1], outputs_buffer[2])
             outputs_buffer = {}
     except WaitingForInputError:
-        print(f'Score: {score}')
-        print(arcadeScreen)
+        # print(f'Score: {score}')
+        # print(arcadeScreen)
         ball_x = arcadeScreen.getBallX()
-        paddle_x = arcadeScreen.getPaddleX()
+        if not paddle_known:
+            paddle_x = arcadeScreen.getPaddleX()
+            paddle_known = True
         
-        print(f'Ball is at: {arcadeScreen.getBallX()}. Paddle is at: {arcadeScreen.getPaddleX()}')
+        # print(f'Ball is at: {arcadeScreen.getBallX()}. Paddle is at: {arcadeScreen.getPaddleX()}')
 
         if ball_x < paddle_x:
             # move left
-            print('moving left')
+            # print('moving left')
+            paddle_x = paddle_x - 1
             icc.set_input(-1)
         elif ball_x > paddle_x:
             # move right
-            print('moving right')
+            # print('moving right')
+            paddle_x = paddle_x + 1
             icc.set_input(1)
         else:
             icc.set_input(0)
