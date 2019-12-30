@@ -1,3 +1,6 @@
+import datetime
+
+start_time = datetime.datetime.now()
 f = open('input.txt')
 line = f.readlines()[0].strip()
 
@@ -41,3 +44,8 @@ from PIL import Image
 im= Image.new('RGB', (25, 6))
 im.putdata(image_raw_data)
 im.save('test.png')
+
+end_time = datetime.datetime.now()
+time_diff = end_time - start_time
+
+print(f'Execution Time: {time_diff}')

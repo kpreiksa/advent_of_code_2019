@@ -2,6 +2,7 @@
 from itertools import permutations 
 import time
 from PIL import Image
+import datetime
 
 class ProgramTerminatedError(Exception):
     pass
@@ -382,9 +383,15 @@ class EHPR():
                 print('Terminated')
                 terminated = True
                 
+start_time = datetime.datetime.now()
 ehpr = EHPR()
 ehpr.paint()
 numPaintedPanels = ehpr._grid.numberPaintedPanels()
+
+end_time = datetime.datetime.now()
+time_diff = end_time - start_time
+
+print(f'Execution Time: {time_diff}')
 
 # boost = IntCodeComputer()
 # boost.set_input(1)

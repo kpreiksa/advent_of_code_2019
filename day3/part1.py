@@ -1,4 +1,6 @@
+import datetime
 
+start_time = datetime.datetime.now()
 f = open('input.txt')
 lines = f.readlines()
 wire1_path = lines[0].strip()
@@ -188,6 +190,11 @@ for index, intersection in enumerate(intersections):
         min_distance[0] = distance_to_intersection
 
 print(min_distance)
+
+end_time = datetime.datetime.now()
+time_diff = end_time - start_time
+
+print(f'Execution Time: {time_diff}')
 
 # import time
 

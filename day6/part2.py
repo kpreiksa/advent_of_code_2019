@@ -1,3 +1,5 @@
+import datetime
+
 orbits = {}
 
 class Node():
@@ -105,7 +107,7 @@ class Node():
         else:
             self._children = None
 
-
+start_time = datetime.datetime.now()
 f = open('input.txt')
 lines = f.readlines()
 total_orbits = 0
@@ -146,3 +148,8 @@ depth_san = san_node.depthFromNode(common_root)
 orb_transfers = depth_you + depth_san - 2 # - 2 because we are transfering from your parent to san's parent
 
 print(orb_transfers)
+
+end_time = datetime.datetime.now()
+time_diff = end_time - start_time
+
+print(f'Execution Time: {time_diff}')

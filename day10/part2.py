@@ -1,4 +1,5 @@
 import math
+import datetime
 
 class Point():
     def __init__(self, x, y):
@@ -62,7 +63,7 @@ class LineSegment():
 
         return True
 
-
+start_time = datetime.datetime.now()
 f = open('input.txt')
 lines = f.readlines()
 lines = [line.strip() for line in lines]
@@ -156,4 +157,7 @@ while len(asteroids) > 1:
     
 
 
+end_time = datetime.datetime.now()
+time_diff = end_time - start_time
 
+print(f'Execution Time: {time_diff}')

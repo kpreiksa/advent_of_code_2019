@@ -1,3 +1,6 @@
+import datetime
+
+start_time = datetime.datetime.now()
 f = open('input.txt')
 line = f.readlines()[0].strip()
 
@@ -47,3 +50,8 @@ for row in layer_to_analyze:
             number_of_twos += 1
     
 print(f'Number of 1s: {number_of_ones}. Number of 2s: {number_of_twos}. Total = {number_of_ones * number_of_twos}')
+
+end_time = datetime.datetime.now()
+time_diff = end_time - start_time
+
+print(f'Execution Time: {time_diff}')

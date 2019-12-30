@@ -1,3 +1,4 @@
+import datetime
 
 class Point():
     def __init__(self, x, y):
@@ -46,7 +47,7 @@ class LineSegment():
 
         return True
 
-
+start_time = datetime.datetime.now()
 f = open('input.txt')
 lines = f.readlines()
 lines = [line.strip() for line in lines]
@@ -86,3 +87,8 @@ for asteroid in asteroids:
         max_visible = asteroid
         
 print(f'Maximum visible asteroids = {max_visible[1]} from location {max_visible[0]}')
+
+end_time = datetime.datetime.now()
+time_diff = end_time - start_time
+
+print(f'Execution Time: {time_diff}')

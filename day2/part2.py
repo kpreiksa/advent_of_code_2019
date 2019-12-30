@@ -1,3 +1,5 @@
+import datetime
+
 def run_instruction(ip, ints):
     # returns length of instruction executed, or -1 to halt program execution
     inst = ints[ip]
@@ -31,7 +33,7 @@ def load_memory(file):
     ints = [int(x) for x in ints_str]
     return ints
 
-
+start_time = datetime.datetime.now()
 search_value = 19690720
 
 for noun in range(0,100):
@@ -56,3 +58,9 @@ for noun in range(0,100):
             break
 
 print(100 * noun + verb)
+
+
+end_time = datetime.datetime.now()
+time_diff = end_time - start_time
+
+print(f'Execution Time: {time_diff}')

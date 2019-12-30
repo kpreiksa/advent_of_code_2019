@@ -1,3 +1,5 @@
+import datetime
+
 def run_instruction(ip, ints):
     # returns length of instruction executed, or -1 to halt program execution
     inst = ints[ip]
@@ -31,7 +33,7 @@ def load_memory(file):
     ints = [int(x) for x in ints_str]
     return ints
 
-
+start_time = datetime.datetime.now()
 ints = load_memory('input.txt')
 ints[1] = 12
 ints[2] = 2
@@ -44,3 +46,8 @@ while(pc < len(ints)):
     else:
         pc += return_value
 print(ints[0])
+
+end_time = datetime.datetime.now()
+time_diff = end_time - start_time
+
+print(f'Execution Time: {time_diff}')

@@ -1,6 +1,7 @@
 
 from itertools import permutations 
 import time
+import datetime
 
 class ProgramTerminatedError(Exception):
     pass
@@ -205,10 +206,15 @@ class IntCodeComputer():
             # except WaitingForInputError:
             #     return -2
 
-
+start_time = datetime.datetime.now()
 boost = IntCodeComputer()
 boost.set_input(2)
 try:
     boost.run_to_end()
 except ProgramTerminatedError:
     print(boost.output)
+
+end_time = datetime.datetime.now()
+time_diff = end_time - start_time
+
+print(f'Execution Time: {time_diff}')

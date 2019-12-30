@@ -1,9 +1,7 @@
 
 from itertools import permutations 
 import time
-
-
-from itertools import permutations
+import datetime
 
 class ProgramTerminatedError(Exception):
     pass
@@ -208,7 +206,7 @@ class IntCodeComputer():
             # except WaitingForInputError:
             #     return -2
 
-
+start_time = datetime.datetime.now()
 amp_settings = list(permutations(range(5, 10)))
 
 outputs = []
@@ -260,3 +258,8 @@ for value in outputs:
         max_output[0] = value[0]
 
 print(f'Max output = [{max_output[1]}] using amplifier settings: {amp_settings[max_output[0]]}')
+
+end_time = datetime.datetime.now()
+time_diff = end_time - start_time
+
+print(f'Execution Time: {time_diff}')

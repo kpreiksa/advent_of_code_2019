@@ -1,3 +1,5 @@
+import datetime
+
 range_to_check = range(372304, 847061)
 
 def get_digit(digit, number):
@@ -37,9 +39,14 @@ def adjacent_match(number):
             return True
     return retval
 
-
+start_time = datetime.datetime.now()
 matches = 0
 
 for i in range_to_check:
     if ((not digits_decrease(i)) and adjacent_match(i)):
         matches += 1
+
+end_time = datetime.datetime.now()
+time_diff = end_time - start_time
+
+print(f'Execution Time: {time_diff}')

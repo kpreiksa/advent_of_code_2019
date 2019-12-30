@@ -3,6 +3,7 @@ from itertools import permutations
 import time
 from PIL import Image
 from pynput import keyboard
+import datetime
 
 class Tile():
 
@@ -37,6 +38,9 @@ class Tile():
     def setType(self, newType):
         self._type = newType
 
+    def getType(self):
+        return self._type
+
 class Screen():
     def __init__(self, x, y):
         self._width = x
@@ -65,6 +69,18 @@ class Screen():
                 if col._type == typeToCheck:
                     countTiles += 1
         return countTiles
+
+    def getBallX(self):
+        for indexY, row in enumerate(self._tiles):
+            for indexX, col in enumerate(row):
+                if col.getType() == Tile.TileType.BallTile:
+                    return indexX
+
+    def getPaddleX(self):
+        for indexY, row in enumerate(self._tiles):
+            for indexX, col in enumerate(row):
+                if col.getType() == Tile.TileType.HorizontalPaddleTile:
+                    return indexX
 
     def addTile(self, x, y, tileType):
         tileTypeStr = ''
@@ -321,11 +337,16 @@ class IntCodeComputer():
             # except WaitingForInputError:
             #     return -2
 
+
+start_time = datetime.datetime.now()
+
 icc = IntCodeComputer()
 arcadeScreen = Screen(10,10)
 
 outputs_ready = 0
 outputs_buffer = {}
+move_counter = 0
+total_score = 0
 while True:
     try:
         icc.run_to_end()
@@ -339,19 +360,38 @@ while True:
                 score = outputs_buffer[2]
                 print(f'Score: {score}')
                 print(arcadeScreen)
+                total_score = score
             else:
                 arcadeScreen.addTile(outputs_buffer[0], outputs_buffer[1], outputs_buffer[2])
             outputs_buffer = {}
     except WaitingForInputError:
         print(f'Score: {score}')
         print(arcadeScreen)
-        key_pressed = input()
-        if key_pressed == 'a':
+        ball_x = arcadeScreen.getBallX()
+        paddle_x = arcadeScreen.getPaddleX()
+        
+        print(f'Ball is at: {arcadeScreen.getBallX()}. Paddle is at: {arcadeScreen.getPaddleX()}')
+
+        if ball_x < paddle_x:
+            # move left
+            print('moving left')
             icc.set_input(-1)
-        elif key_pressed == 'd':
+        elif ball_x > paddle_x:
+            # move right
+            print('moving right')
             icc.set_input(1)
         else:
             icc.set_input(0)
+        move_counter += 1
+
+        
+        # key_pressed = input()
+        # if key_pressed == 'a':
+        #     icc.set_input(-1)
+        # elif key_pressed == 'd':
+        #     icc.set_input(1)
+        # else:
+        #     icc.set_input(0)
 
 
         # while True:
@@ -369,4 +409,9 @@ while True:
         #         break
     except ProgramTerminatedError:
         break
+
+end_time = datetime.datetime.now()
+time_diff = end_time - start_time
+
+print(f'Completed game in {time_diff} with score of {total_score} in {move_counter} moves')
         

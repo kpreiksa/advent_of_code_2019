@@ -1,3 +1,6 @@
+import datetime
+
+start_time = datetime.datetime.now()
 orbits = {}
 f = open('input.txt')
 lines = f.readlines()
@@ -32,3 +35,7 @@ for k in orbits.keys():
 
 print(total_orbits)
 
+end_time = datetime.datetime.now()
+time_diff = end_time - start_time
+
+print(f'Execution Time: {time_diff}')

@@ -2,6 +2,7 @@
 from itertools import permutations 
 import time
 from PIL import Image
+import datetime
 
 class Tile():
 
@@ -320,6 +321,8 @@ class IntCodeComputer():
             # except WaitingForInputError:
             #     return -2
 
+start_time = datetime.datetime.now()
+
 icc = IntCodeComputer()
 arcadeScreen = Screen(10,10)
 
@@ -348,4 +351,9 @@ print(f'Block Tiles: {arcadeScreen.countTiles(Tile.TileType.BlockTile)}')
 print(f'Empty Tiles: {arcadeScreen.countTiles(Tile.TileType.EmptyTile)}')
 print(f'Horizontal Tiles: {arcadeScreen.countTiles(Tile.TileType.HorizontalPaddleTile)}')
 print(f'Wall Tiles: {arcadeScreen.countTiles(Tile.TileType.WallTile)}')
+
+end_time = datetime.datetime.now()
+time_diff = end_time - start_time
+
+print(f'Execution Time: {time_diff}')
         
